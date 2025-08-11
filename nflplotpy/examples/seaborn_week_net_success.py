@@ -217,6 +217,118 @@ def create_week_net_success_plot(games_df: pd.DataFrame, season: int, week: int)
     return fig
 
 
+def compute_team_season_net_success(pbp: pd.DataFrame, team: str) -> pd.DataFrame:
+    """Compute per-game net success from the perspective of a given team.
+
+    Returns rows: game_id, week, team, opponent, is_home, team_sr, opp_sr, net_sr
+    where net_sr = team_sr - opp_sr.
+    """
+    df = pbp.copy()
+
+    # Success flag
+    df['success'] = df.apply(
+        lambda r: _is_success(int(r['down']), float(r['yards_gained']), float(r['ydstogo'])),
+        axis=1,
+    )
+
+    # Offensive success rate by game and posteam
+    team_sr = (
+        df.groupby(['game_id', 'posteam'])['success']
+        .mean()
+        .reset_index()
+        .rename(columns={'posteam': 'team', 'success': 'success_rate'})
+    )
+
+    # Game metadata
+    meta = df.groupby('game_id')[['home_team', 'away_team', 'week']].agg('first').reset_index()
+
+    rows: List[Tuple] = []
+    team = team.upper()
+    for _, gm in meta.iterrows():
+        gid = gm['game_id']
+        home = gm['home_team']
+        away = gm['away_team']
+        if team not in (home, away):
+            continue
+
+        # Lookup SR for both teams in this game
+        sr_home = team_sr[(team_sr['game_id'] == gid) & (team_sr['team'] == home)]['success_rate']
+        sr_away = team_sr[(team_sr['game_id'] == gid) & (team_sr['team'] == away)]['success_rate']
+        if sr_home.empty or sr_away.empty:
+            continue
+        home_sr = float(sr_home.iloc[0])
+        away_sr = float(sr_away.iloc[0])
+
+        if team == home:
+            rows.append((gid, int(gm['week']), team, away, True, home_sr, away_sr, home_sr - away_sr))
+        else:
+            rows.append((gid, int(gm['week']), team, home, False, away_sr, home_sr, away_sr - home_sr))
+
+    return pd.DataFrame(
+        rows,
+        columns=['game_id', 'week', 'team', 'opponent', 'is_home', 'team_sr', 'opp_sr', 'net_sr'],
+    )
+
+
+def create_team_season_net_success_plot(team_df: pd.DataFrame, team: str, season: int) -> plt.Figure:
+    """Bar chart of a team's weekly net success with logos: team at bar tip, opponent at origin."""
+    if team_df.empty:
+        raise ValueError("No games found for selected team")
+
+    team = team.upper()
+    plot_df = team_df.sort_values('week').reset_index(drop=True).copy()
+
+    # X positions by chronological week
+    plot_df['x'] = np.arange(len(plot_df))
+
+    # Colors: use team primary for all bars
+    try:
+        bar_color = nflplot.get_team_colors(team, 'primary')
+    except Exception:
+        bar_color = '#1f77b4'
+
+    plt.style.use('default')
+    fig, ax = plt.subplots(figsize=(16, 7))
+
+    ax.bar(plot_df['x'], plot_df['net_sr'], color=bar_color, alpha=0.9, edgecolor='white', linewidth=0.6)
+    ax.axhline(0, color='black', linewidth=1.2, alpha=0.4)
+
+    y_pad = 0.01
+    for _, row in plot_df.iterrows():
+        x = row['x']
+        net = float(row['net_sr'])
+        opp = row['opponent']
+
+        # Team logo at bar tip
+        end_y = net + (y_pad if net >= 0 else -y_pad)
+        add_nfl_logo(ax, team, x=x, y=end_y, target_width_pixels=28, zorder=10)
+
+        # Opponent logo at origin
+        origin_y = 0 + (y_pad if net < 0 else -y_pad)
+        add_nfl_logo(ax, opp, x=x, y=origin_y, target_width_pixels=24, zorder=10)
+
+        # Small label with opponent and week
+        ax.text(
+            x,
+            end_y + (0.008 if net >= 0 else -0.008),
+            f"W{int(row['week'])} {('vs' if row['is_home'] else '@')} {opp}\n{net:+.3f}",
+            ha='center', va='bottom' if net >= 0 else 'top', fontsize=8, alpha=0.8,
+        )
+
+    # X tick labels: weeks under each bar
+    ax.set_xticks(plot_df['x'])
+    ax.set_xticklabels([f"W{int(w)}" for w in plot_df['week']], rotation=0)
+    ax.set_ylabel('Net Success Rate (Team - Opponent)')
+    ax.set_title(
+        f"{team} {season} Net Success by Week\nTeam logo at tip, opponent at origin",
+        fontsize=18, fontweight='bold', pad=14,
+    )
+    ax.grid(axis='y', linestyle='--', alpha=0.25)
+    ax.set_axisbelow(True)
+    plt.tight_layout()
+    return fig
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create a weekly Net Success Rate chart with team logos",
@@ -228,7 +340,8 @@ Examples:
         """,
     )
     parser.add_argument('--year', '-y', type=int, default=2024, help='Season year (default: 2024)')
-    parser.add_argument('--week', '-w', type=int, default=10, help='Week number (default: 10)')
+    parser.add_argument('--week', '-w', type=int, default=10, help='Week number for league view (ignored if --team set)')
+    parser.add_argument('--team', '-t', type=str, default=None, help='Team abbreviation for season view (e.g., KC)')
     return parser.parse_args()
 
 
@@ -236,21 +349,53 @@ def main():
     args = parse_arguments()
     season = args.year
     week = args.week
+    team = args.team.upper() if args.team else None
 
     try:
-        pbp_week = _load_week_pbp(season, week)
-        games = compute_game_net_success(pbp_week)
+        if team:
+            # Season mode for a specific team
+            pbp_season = nfl.import_pbp_data([season])
+            pbp_season = pbp_season[(pbp_season.get('season_type') == 'REG')].copy()
+            offensive_mask = (
+                (pbp_season.get('pass_attempt', 0) == 1) | (pbp_season.get('rush_attempt', 0) == 1)
+            )
+            pbp_season = pbp_season[offensive_mask].copy()
+            if 'qb_spike' in pbp_season.columns:
+                pbp_season = pbp_season[pbp_season['qb_spike'] != 1]
+            if 'qb_kneel' in pbp_season.columns:
+                pbp_season = pbp_season[pbp_season['qb_kneel'] != 1]
 
-        if games.empty:
-            raise ValueError("No games found after processing play-by-play.")
+            keep_cols = [
+                'game_id', 'posteam', 'defteam', 'home_team', 'away_team', 'week', 'down', 'ydstogo', 'yards_gained'
+            ]
+            keep_cols = [c for c in keep_cols if c in pbp_season.columns]
+            pbp_season = pbp_season[keep_cols].copy()
+            pbp_season = pbp_season[pbp_season['posteam'].notna() & pbp_season['down'].notna() & pbp_season['ydstogo'].notna()]
 
-        fig = create_week_net_success_plot(games, season, week)
-        out_dir = os.path.dirname(__file__)
-        out_path = os.path.join(out_dir, f'seaborn_week_{season}_w{week}_net_success.png')
-        fig.savefig(out_path, dpi=300, bbox_inches='tight', facecolor='white')
-        plt.close(fig)
+            team_games = compute_team_season_net_success(pbp_season, team)
+            if team_games.empty:
+                raise ValueError("No games found for selected team after processing play-by-play.")
 
-        print(f"💾 Saved weekly net success chart: {out_path}")
+            fig = create_team_season_net_success_plot(team_games, team, season)
+            out_dir = os.path.dirname(__file__)
+            out_path = os.path.join(out_dir, f'seaborn_{team.lower()}_{season}_net_success_season.png')
+            fig.savefig(out_path, dpi=300, bbox_inches='tight', facecolor='white')
+            plt.close(fig)
+            print(f"💾 Saved team season net success chart: {out_path}")
+        else:
+            # Weekly league view
+            pbp_week = _load_week_pbp(season, week)
+            games = compute_game_net_success(pbp_week)
+
+            if games.empty:
+                raise ValueError("No games found after processing play-by-play.")
+
+            fig = create_week_net_success_plot(games, season, week)
+            out_dir = os.path.dirname(__file__)
+            out_path = os.path.join(out_dir, f'seaborn_week_{season}_w{week}_net_success.png')
+            fig.savefig(out_path, dpi=300, bbox_inches='tight', facecolor='white')
+            plt.close(fig)
+            print(f"💾 Saved weekly net success chart: {out_path}")
 
     except Exception as e:
         print(f"\n❌ Error creating weekly net success chart: {e}")
