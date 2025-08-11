@@ -13,12 +13,25 @@ Welcome to the nflplotpy examples directory! This collection of scripts demonstr
    ```bash
    # Comprehensive feature demo
    python nflplotpy_demo.py
-   
-   # Real NFL data examples with team logos
-   python real_data_examples.py
-   
+
+   # Matplotlib examples
+   python matplotlib/nfl_examples.py                  # Basic logo/epa demo
+
    # Quick functionality test
    python quick_test.py
+
+   # Seaborn examples
+   python seaborn/seaborn_team_schedule.py                    # KC 2024 schedule analysis
+   python seaborn/seaborn_team_schedule.py --team BUF         # Buffalo Bills analysis
+   python seaborn/seaborn_team_schedule.py --team SF --year 2023  # 49ers 2023 season
+   python seaborn/seaborn_fourth_down_evolution.py            # 4th down trends analysis
+   python seaborn/seaborn_week_net_success.py -y 2024 -w 10   # League weekly net SR
+   python seaborn/seaborn_week_net_success.py -y 2024 -t KC   # Team season net SR
+
+   # Plotly examples (interactive)
+   python plotly/plotly_team_schedule.py                      # Interactive schedule
+   python plotly/plotly_team_schedule.py --default-team BUF   # Start with Bills selected
+   python plotly/plotly_fourth_down_evolution.py              # Interactive 4th down dashboard
    ```
 
 ## 📊 Available Examples
@@ -173,6 +186,104 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 ```
 
+## 🎨 NEW: Seaborn & Plotly Examples
+
+### 4. `seaborn_team_schedule.py` - Team Schedule Analysis with Seaborn
+
+**What it demonstrates:**
+- 🏈 **Individual Team Focus**: Analyze single team's complete season
+- 📊 **Game Results vs Spreads**: Compare actual performance to betting lines  
+- 🎯 **Seaborn Integration**: Publication-quality statistical visualizations
+- 📈 **Spread Performance**: Track how teams perform against expectations
+- 🏆 **Multi-Team Comparison**: Compare multiple teams' spread performance
+
+**Key Features:**
+- Horizontal bar charts showing score differential vs pre-game spread
+- Color coding for wins/losses and spread performance
+- Statistical summaries and team comparisons
+- Professional seaborn styling for publications
+- **Command line arguments**: `--team`, `--year`, `--comparison-teams`, `--no-comparison`
+
+**Output Files:**
+- `seaborn_[team]_[year]_schedule.png` - Individual team detailed analysis
+- `seaborn_teams_comparison_[year].png` - Multi-team comparison charts
+
+### 5. `plotly_team_schedule.py` - Interactive Team Schedule Dashboard
+
+**What it demonstrates:**
+- 🎮 **Interactive Team Selection**: Dropdown menu to switch between all teams
+- 🔍 **Rich Hover Information**: Detailed game stats, scores, spreads on hover
+- 📊 **Multiple Views**: Team schedule, spread heatmap, animated progression
+- 📱 **Web-Based**: Output as HTML files for sharing and presenting
+
+**Key Features:**
+- Interactive team selector with all 32 teams
+- Animated season progression showing win rate vs spread performance
+- Heatmap visualization of spread performance by team and week
+- Detailed hover tooltips with game context and results
+- **Command line arguments**: `--year`, `--default-team`, `--skip-heatmap`, `--skip-animation`
+
+**Output Files:**
+- `plotly_team_schedule_[year].html` - Interactive team schedule selector
+- `plotly_spread_heatmap_[year].html` - League-wide spread performance heatmap
+- `plotly_season_animation_[year].html` - Animated season progression
+
+### 6. `seaborn_fourth_down_evolution.py` - 4th Down Strategy Analytics
+
+**What it demonstrates:**
+- 📈 **Multi-Year Trend Analysis**: Track 4th down strategy evolution (2015-2024)
+- 🎯 **Distance Categories**: Break down by 4th & short, medium, long, very long
+- 📊 **Team Aggressiveness**: Compare team 4th down philosophies
+- 🏈 **Success Rate Analysis**: Track conversion rates and strategy effectiveness
+- 📉 **Seaborn Statistical Plots**: Heatmaps, trend lines, and correlation analysis
+
+**Key Insights:**
+- Validates the "analytics revolution" in NFL decision-making
+- Shows dramatic increase in "going for it" rates since 2015
+- Reveals which teams are most/least aggressive on 4th down
+- Analyzes success rates by distance and situation
+
+**Output Files:**
+- `seaborn_fourth_down_evolution.png` - Comprehensive trends analysis
+- `seaborn_team_fourth_down_aggressiveness.png` - Team comparison charts
+
+### 7. `plotly_fourth_down_evolution.py` - Interactive 4th Down Dashboard
+
+**What it demonstrates:**
+- 🎬 **Animated Timeline**: Watch 4th down strategy evolve year by year
+- 🎮 **Interactive Filtering**: Filter by team, distance, field position
+- 📊 **Multi-Perspective Dashboard**: Multiple views in single interface
+- 🎯 **Situational Analysis**: Drill down by field position and game context
+- 📱 **Rich Interactivity**: Hover, zoom, filter, and explore data dynamically
+
+**Key Features:**
+- Animated bar chart showing evolution of aggressiveness by distance
+- Interactive team comparison dashboard with multiple metrics
+- Situational heatmap analysis by field position and distance
+- Animated scatter plot showing team performance over time
+
+**Output Files:**
+- `plotly_fourth_down_trends_animated.html` - Animated trends timeline
+- `plotly_fourth_down_team_dashboard.html` - Interactive team comparison
+- `plotly_fourth_down_situational.html` - Situational analysis tool
+
+## 🆕 What's New in Seaborn & Plotly Examples
+
+### **Advanced Data Integration**
+- **Betting Lines**: Direct integration with `import_schedules()` for spread analysis
+- **Multi-Year Analysis**: Comprehensive trends across 10 seasons (2015-2024)  
+- **Rich Statistics**: Success rates, team comparisons, situational breakdowns
+
+### **Professional Visualizations**
+- **Seaborn**: Publication-quality statistical plots with NFL team colors
+- **Plotly**: Interactive web-based dashboards with animation and filtering
+- **Team Branding**: Consistent use of official NFL team colors throughout
+
+### **Real Analytics Questions**
+- **Schedule Performance**: How do teams perform vs betting expectations?
+- **Strategy Evolution**: How much more aggressive are teams on 4th down now?
+- **Team Philosophy**: Which teams are most/least aggressive in key situations?
+
 ## 🎯 Next Steps
 
 1. **Modify Examples**: Edit the scripts to use your own data
@@ -180,6 +291,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 3. **Explore Colors**: Try different team color combinations
 4. **Add Reference Lines**: Use median/mean lines for context
 5. **Export High-DPI**: Save plots with `dpi=300` for presentations
+6. **🆕 Try Interactive**: Run the plotly examples and open HTML outputs in browser
+7. **🆕 Analyze Trends**: Use the 4th down scripts to validate your own hypotheses
 
 ## 📚 Documentation
 
@@ -187,6 +300,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 - **Function Documentation**: All functions have detailed docstrings
 - **nfl_data_py Integration**: Check nfl_data_py documentation for data options
 - **Matplotlib Integration**: Standard matplotlib customization applies
+- **🆕 Seaborn Integration**: Statistical plotting with NFL data and team branding
+- **🆕 Plotly Integration**: Interactive web-based NFL analytics dashboards
 
 ---
 

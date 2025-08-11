@@ -1,0 +1,17 @@
+# Ignore generated assets from examples
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+*.html
+*.gif
+*.mp4
+*.webm
+*.json
+*.parquet
+*.feather
+
+# But keep curated example input CSVs
+!matplotlib/2024_nfl_team_epa_data.csv
+
