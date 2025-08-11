@@ -15,3 +15,16 @@
 # But keep curated example input CSVs
 !matplotlib/2024_nfl_team_epa_data.csv
 
+# Curated example outputs (tracked to show expected results)
+!seaborn/seaborn_week_2024_w10_net_success.png
+!seaborn/seaborn_kc_2024_net_success_season.png
+!seaborn/seaborn_kc_2024_schedule.png
+!seaborn/seaborn_teams_comparison_2024.png
+!matplotlib/2024_all_teams_epa.png
+!matplotlib/2024_divisions_epa.png
+!matplotlib/2024_conferences_epa.png
+!plotly/plotly_team_schedule_2024.html
+!plotly/plotly_fourth_down_situational.html
+!plotly/plotly_fourth_down_team_dashboard.html
+!plotly/plotly_fourth_down_trends_animated.html
+
